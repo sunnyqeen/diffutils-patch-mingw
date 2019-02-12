@@ -1,0 +1,68 @@
+Only in patch-2.7.6-1: bin
+Only in patch-2.7.6-1: build
+diff -ur patch-2.7.6/lib/euidaccess.c patch-2.7.6-1/lib/euidaccess.c
+--- patch-2.7.6/lib/euidaccess.c	2018-02-03 13:41:53 +0000
++++ patch-2.7.6-1/lib/euidaccess.c	2019-02-12 23:30:07 +0000
+@@ -67,6 +67,13 @@
+ 
+ #endif
+ 
++#ifdef __MINGW32__
++#define getuid() 0
++#define getgid() 0
++#define geteuid() 0
++#define getegid() 0
++#endif
++
+ /* Return 0 if the user has permission of type MODE on FILE;
+    otherwise, return -1 and set 'errno'.
+    Like access, except that it uses the effective user and group
+Only in patch-2.7.6-1: share
+diff -ur patch-2.7.6/src/safe.c patch-2.7.6-1/src/safe.c
+--- patch-2.7.6/src/safe.c	2018-02-03 13:41:49 +0000
++++ patch-2.7.6-1/src/safe.c	2019-02-12 00:03:40 +0000
+@@ -21,7 +21,9 @@
+ #include <config.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
++#ifndef __MINGW32__
+ #include <sys/resource.h>
++#endif
+ #include <sys/time.h>
+ #include <fcntl.h>
+ #include <stdio.h>
+@@ -96,11 +98,15 @@
+ 
+ static void init_dirfd_cache (void)
+ {
++#ifndef __MINGW32__
+   struct rlimit nofile;
+ 
+   max_cached_fds = 8;
+   if (getrlimit (RLIMIT_NOFILE, &nofile) == 0)
+     max_cached_fds = MAX (nofile.rlim_cur / 4, max_cached_fds);
++#else
++  max_cached_fds = 8;
++#endif
+ 
+   cached_dirfds = hash_initialize (max_cached_fds,
+ 				   NULL,
+diff -ur patch-2.7.6/src/util.c patch-2.7.6-1/src/util.c
+--- patch-2.7.6/src/util.c	2018-02-03 13:41:49 +0000
++++ patch-2.7.6-1/src/util.c	2019-02-12 23:29:52 +0000
+@@ -254,6 +254,7 @@
+ 		S_ISLNK (mode) ? "symbolic link" : "file",
+ 		quotearg (to));
+     }
++#ifndef __MINGW32__
+   if (attr & FA_IDS)
+     {
+       static uid_t euid = -1;
+@@ -282,6 +283,7 @@
+ 		S_ISLNK (mode) ? "symbolic link" : "file",
+ 		quotearg (to));
+     }
++#endif
+   if (attr & FA_XATTRS)
+     if (copy_attr (from, to) != 0
+ 	&& errno != ENOSYS && errno != ENOTSUP && errno != EPERM)

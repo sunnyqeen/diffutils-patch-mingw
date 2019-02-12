@@ -1,0 +1,33 @@
+diff -ur diffutils-3.7/gnulib-tests/setlocale.c diffutils-3.7-1/gnulib-tests/setlocale.c
+--- diffutils-3.7/gnulib-tests/setlocale.c	2018-12-24 02:21:56 +0000
++++ diffutils-3.7-1/gnulib-tests/setlocale.c	2019-02-12 00:56:55 +0000
+@@ -33,7 +33,13 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#ifdef __MINGW32__
++#define getegid() 0
++#define gl_locale_name_default() ""
++#define gl_locale_name_environ(x,y) ""
++#else
+ #include "localename.h"
++#endif
+ 
+ #if HAVE_CFLOCALECOPYPREFERREDLANGUAGES || HAVE_CFPREFERENCESCOPYAPPVALUE
+ # if HAVE_CFLOCALECOPYPREFERREDLANGUAGES
+diff -ur diffutils-3.7/src/dir.c diffutils-3.7-1/src/dir.c
+--- diffutils-3.7/src/dir.c	2019-02-12 22:38:12 +0000
++++ diffutils-3.7-1/src/dir.c	2019-02-12 22:43:40 +0000
+@@ -327,10 +327,12 @@
+ static bool _GL_ATTRIBUTE_PURE
+ dir_loop (struct comparison const *cmp, int i)
+ {
++#ifndef __MINGW32__ 
+   struct comparison const *p = cmp;
+   while ((p = p->parent))
+     if (0 < same_file (&p->file[i].stat, &cmp->file[i].stat))
+       return true;
++#endif
+   return false;
+ }
+ 
